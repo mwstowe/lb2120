@@ -1,6 +1,6 @@
 # lb2120
 
-Command line dumped of the API for the Netgear LB2120 
+Command line access to the API for the Netgear LB2120 
 
 ## Usage
 
