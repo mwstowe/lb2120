@@ -10,3 +10,8 @@ The LB2120 has its own web UI.  You'll need to know its IP address and the Admin
 lb2120.py -p password -o failover -k wanConnected
 ```
 This will return "True" if connected via wireline, and "False" if not
+
+The also has the capability of sending text messages via the LB2120.  It's not the most lovely code in the world, but it works:
+
+```
+lb2120.py -p password -n phonenumber -t "text message"
