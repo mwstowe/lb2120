@@ -2,7 +2,8 @@
 #
 # uses the web UI of the LB2120 to retrieve useful json from its internal API
 #
-helpstr='Usage:  lb2120.py -p password -i ipaddress -o jsonobject -k jsonkey'
+helpstr='Usage:  lb2120.py -p password -i ipaddress -o jsonobject -k jsonkey or\n' \
+'                  -p password -i ipaddress -n number -t text'
 #
 
 from lxml import html
@@ -18,9 +19,10 @@ IP='192.168.5.1'
 password=''
 jsonkey=''
 jsonobject=''
+phonenumber=''
 
 try:
-    opts, args = getopt.getopt(argv,'hi:p:o:k:',['ip=','password=','object=','key='])
+    opts, args = getopt.getopt(argv,'hi:p:o:k:n:t:',['ip=','password=','object=','key=','number=','text='])
 except getopt.GetoptError:
     print (helpstr)
     sys.exit(2)
@@ -36,6 +38,10 @@ for opt, arg in opts:
         jsonkey = arg
     elif opt in ("-o","--object"):
         jsonobject = arg
+    elif opt in ("-n","--number"):
+        phonenumber = arg
+    elif opt in ("-t","--text"):
+        textmessage = arg
 
 if not password:
     print ('Password required.\n\n' + helpstr)
@@ -50,22 +56,38 @@ with requests.Session() as session:
     token = form_page.forms[0].fields['token']
 
     form = form_page.forms[1]
+
     form.fields['session.password'] = password
     form.action = 'http://' + IP + form.action
     postdata = form.form_values()
     postdata.append(('token',token))
     r = session.post(form.action,data=postdata)
 
-    api_url = 'http://' + IP + '/api/model.json?internalapi=1&x=' + str(random.randint(1,100000))
+    if phonenumber:
 
-    r = session.get(api_url, headers={'referer': REQUEST_URL,'dnt': '1','host': '192.168.5.1'})
-    
-    json_object=json.loads(r.content)
+        smsform = form_page.forms[2]
+        smsform.fields['sms.sendMsg.receiver'] = phonenumber
+        smsform.fields['sms.sendMsg.text'] = textmessage
+        smsform.action = 'http://' + IP + smsform.action
+        postdata = smsform.form_values()
+        postdata.append(('sms.sendMsg.clientId','test'))
+        postdata.append(('action','send'))
+        postdata.append(('token',token))
+        r = session.post(smsform.action,data=postdata)
+        print ('Sent')
 
-if jsonkey:
-    print(json_object[jsonobject][jsonkey])
-elif jsonobject:
-    print(json_object[jsonobject])
-else:
-    print(json.dumps(json_object, indent=1))
+    else:
+
+        api_url = 'http://' + IP + '/api/model.json?internalapi=1&x=' + str(random.randint(1,100000))
+
+        r = session.get(api_url, headers={'referer': REQUEST_URL,'dnt': '1','host': '192.168.5.1'})
+
+        json_object=json.loads(r.content)
+
+        if jsonkey:
+            print(json_object[jsonobject][jsonkey])
+        elif jsonobject:
+            print(json_object[jsonobject])
+        else:
+            print(json.dumps(json_object, indent=1))
 
