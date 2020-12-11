@@ -2,8 +2,9 @@
 #
 # uses the web UI of the LB2120 to retrieve useful json from its internal API
 #
-helpstr='Usage:  lb2120.py -p password -i ipaddress -o jsonobject -k jsonkey or\n' \
-'                  -p password -i ipaddress -n number -t text'
+helpstr='Usage:  lb2120.py -p password -i ipaddress -o jsonobject -k jsonkey\n' \
+'                  -p password -i ipaddress -n number -t text\n' \
+'                  -p password -i ipaddress -r (restart)\n'
 #
 
 from lxml import html
@@ -20,9 +21,10 @@ password=''
 jsonkey=''
 jsonobject=''
 phonenumber=''
+restart='false'
 
 try:
-    opts, args = getopt.getopt(argv,'hi:p:o:k:n:t:',['ip=','password=','object=','key=','number=','text='])
+    opts, args = getopt.getopt(argv,'hri:p:o:k:n:t:',['ip=','password=','object=','key=','number=','text='])
 except getopt.GetoptError:
     print (helpstr)
     sys.exit(2)
@@ -42,9 +44,15 @@ for opt, arg in opts:
         phonenumber = arg
     elif opt in ("-t","--text"):
         textmessage = arg
+    elif opt in ("-r","--restart"):
+        restart = 'true'
 
 if not password:
     print ('Password required.\n\n' + helpstr)
+    sys.exit(2)
+
+if ( restart == 'true' ) and (( phonenumber != '') or ( jsonkey != '') or ( jsonobject != '')):
+    print ('Restart cannot be combined with other options.\n\n' + helpstr)
     sys.exit(2)
 
 REQUEST_URL = 'http://' + IP + '/index.html'
@@ -63,7 +71,16 @@ with requests.Session() as session:
     postdata.append(('token',token))
     r = session.post(form.action,data=postdata)
 
-    if phonenumber:
+    if restart=='true':
+        restartform = form_page.forms[1]
+        postdata = restartform.form_values()
+        postdata.append(('general.routerReset', '1'))
+        postdata.append(('token',token))
+        postdata.append(('general.shutdown','Restart'))
+        r = session.post(restartform.action,data=postdata)
+        print ('Restarted')
+
+    elif phonenumber:
 
         smsform = form_page.forms[2]
         smsform.fields['sms.sendMsg.receiver'] = phonenumber

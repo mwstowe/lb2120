@@ -15,3 +15,8 @@ The also has the capability of sending text messages via the LB2120.  It's not t
 
 ```
 lb2120.py -p password -n phonenumber -t "text message"
+...
+
+The LB2120 can be restarted using the following syntax:
+...
+lb2120.py -p password -r
